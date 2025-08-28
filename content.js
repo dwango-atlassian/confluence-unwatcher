@@ -1,8 +1,7 @@
 // Prevent duplicate execution
 if (window.confluenceUnwatcher) {
   console.log('Confluence Unwatcher already loaded');
-  return;
-}
+} else {
 
 class ConfluenceUnwatcher {
   constructor() {
@@ -162,3 +161,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 window.confluenceUnwatcher = confluenceUnwatcher;
+
+}
