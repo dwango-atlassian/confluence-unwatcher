@@ -9,7 +9,7 @@
   ],
   "content_scripts": [
     {
-      "matches": ["*://*.atlassian.net/*", "*://*/confluence/*", "*://confluence.*/*"],
+      "matches": ["*://*.atlassian.net/*", "*://*/confluence/*"],
       "js": ["content.js"],
       "run_at": "document_end"
     }
