@@ -76,14 +76,44 @@ class ConfluenceUnwatcher {
       const unwatchedCount = await this.unwatchCurrentPage();
       this.totalUnwatched += unwatchedCount;
       
-      console.log(`Page ${this.currentPage}: ${unwatchedCount} items unwatched`);
+      console.log(`Page ${this.currentPage}: ${unwatchedCount} items unwatched (Total: ${this.totalUnwatched})`);
       
-      hasMorePages = await this.goToNextPage();
-      if (hasMorePages) {
+      // Check for next page before trying to go there
+      const nextButton = document.querySelector('a[title*="次"], a[title*="Next"], a.next, .pagination-next a, a[href*="startIndex"]');
+      
+      if (!nextButton || nextButton.classList.contains('disabled') || !nextButton.href) {
+        console.log('No more pages found, finishing...');
+        hasMorePages = false;
+      } else {
+        console.log('Moving to next page...');
         this.currentPage++;
-        await this.delay(2000);
+        
+        const currentUrl = window.location.href;
+        window.location.href = nextButton.href;
+        
+        // Wait for page to actually change and load
+        hasMorePages = await new Promise((resolve) => {
+          const checkPageChange = () => {
+            if (window.location.href !== currentUrl && document.readyState === 'complete') {
+              // Additional wait for dynamic content to load
+              setTimeout(() => resolve(true), 2000);
+            } else {
+              setTimeout(checkPageChange, 500);
+            }
+          };
+          
+          // Timeout after 30 seconds
+          setTimeout(() => {
+            console.log('Page transition timeout, assuming no more pages');
+            resolve(false);
+          }, 30000);
+          
+          checkPageChange();
+        });
       }
     }
+    
+    console.log(`Finished processing all pages. Total unwatched: ${this.totalUnwatched}`);
   }
 
   async unwatchCurrentPage() {
@@ -137,34 +167,6 @@ class ConfluenceUnwatcher {
     return unwatchedCount;
   }
 
-  async goToNextPage() {
-    const nextButton = document.querySelector('a[title*="次"], a[title*="Next"], a.next, .pagination-next a, a[href*="startIndex"]');
-    
-    if (!nextButton || nextButton.classList.contains('disabled')) {
-      return false;
-    }
-    
-    const nextUrl = nextButton.href;
-    if (!nextUrl) {
-      return false;
-    }
-    
-    console.log('Moving to next page...');
-    window.location.href = nextUrl;
-    
-    await new Promise((resolve) => {
-      const checkLoad = () => {
-        if (document.readyState === 'complete') {
-          setTimeout(resolve, 1000);
-        } else {
-          setTimeout(checkLoad, 500);
-        }
-      };
-      checkLoad();
-    });
-    
-    return true;
-  }
 
   getStatus() {
     return {
