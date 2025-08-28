@@ -89,17 +89,57 @@ class ConfluenceUnwatcher {
   async unwatchCurrentPage() {
     let unwatchedCount = 0;
     
-    const unwatchLinks = document.querySelectorAll('a[href*="removewatchpage.action"], a[href*="removewatch"]');
-    console.log(`Found ${unwatchLinks.length} unwatch links on current page`);
+    // More comprehensive selectors for unwatch links
+    const selectors = [
+      'a[href*="removewatchpage.action"]',
+      'a[href*="removewatch"]',
+      'a[href*="unwatch"]',
+      'button[data-testid*="unwatch"]',
+      'button[aria-label*="unwatch"]',
+      'button[aria-label*="Unwatch"]',
+      '.unwatch-button',
+      '[data-action="unwatch"]'
+    ];
     
-    for (let i = 0; i < unwatchLinks.length; i++) {
-      const link = unwatchLinks[i];
+    let unwatchElements = [];
+    for (const selector of selectors) {
+      const elements = document.querySelectorAll(selector);
+      unwatchElements.push(...elements);
+    }
+    
+    // Remove duplicates
+    unwatchElements = [...new Set(unwatchElements)];
+    
+    console.log(`Found ${unwatchElements.length} unwatch elements on current page`);
+    console.log('Current URL:', window.location.href);
+    console.log('Page title:', document.title);
+    
+    if (unwatchElements.length === 0) {
+      // Debug: log all links to see what's available
+      const allLinks = document.querySelectorAll('a[href]');
+      console.log(`Total links found: ${allLinks.length}`);
+      const watchRelatedLinks = Array.from(allLinks).filter(link => 
+        link.href.includes('watch') || link.textContent.includes('watch') || link.textContent.includes('Watch')
+      );
+      console.log('Watch-related links:', watchRelatedLinks.map(link => ({ href: link.href, text: link.textContent })));
+    }
+    
+    for (let i = 0; i < unwatchElements.length; i++) {
+      const element = unwatchElements[i];
       
-      if (link && link.href) {
-        try {
-          console.log(`Unwatching item ${i + 1}/${unwatchLinks.length}`);
+      try {
+        console.log(`Processing item ${i + 1}/${unwatchElements.length}:`, element);
+        
+        if (element.tagName.toLowerCase() === 'button') {
+          // Handle button clicks
+          element.click();
+          unwatchedCount++;
+          await this.delay(500);
+        } else if (element.href) {
+          // Handle link requests
+          console.log(`Unwatching via URL: ${element.href}`);
           
-          const response = await fetch(link.href, {
+          const response = await fetch(element.href, {
             method: 'GET',
             credentials: 'same-origin',
             headers: {
@@ -109,15 +149,15 @@ class ConfluenceUnwatcher {
           
           if (response.ok) {
             unwatchedCount++;
-            link.closest('tr')?.remove();
+            element.closest('tr, .watch-item, .notification-item')?.remove();
           } else {
             console.warn(`Failed to unwatch: ${response.status} ${response.statusText}`);
           }
           
           await this.delay(300);
-        } catch (error) {
-          console.error('Error unwatching item:', error);
         }
+      } catch (error) {
+        console.error('Error unwatching item:', error);
       }
     }
     
