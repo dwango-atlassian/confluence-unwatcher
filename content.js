@@ -89,75 +89,48 @@ class ConfluenceUnwatcher {
   async unwatchCurrentPage() {
     let unwatchedCount = 0;
     
-    // More comprehensive selectors for unwatch links
-    const selectors = [
-      'a[href*="removewatchpage.action"]',
-      'a[href*="removewatch"]',
-      'a[href*="unwatch"]',
-      'button[data-testid*="unwatch"]',
-      'button[aria-label*="unwatch"]',
-      'button[aria-label*="Unwatch"]',
-      '.unwatch-button',
-      '[data-action="unwatch"]'
-    ];
+    // Look for the specific "ウォッチの中止" (Stop watching) links
+    const unwatchLinks = document.querySelectorAll('a.link-stop-watching');
     
-    let unwatchElements = [];
-    for (const selector of selectors) {
-      const elements = document.querySelectorAll(selector);
-      unwatchElements.push(...elements);
-    }
-    
-    // Remove duplicates
-    unwatchElements = [...new Set(unwatchElements)];
-    
-    console.log(`Found ${unwatchElements.length} unwatch elements on current page`);
+    console.log(`Found ${unwatchLinks.length} unwatch links on current page`);
     console.log('Current URL:', window.location.href);
     console.log('Page title:', document.title);
     
-    if (unwatchElements.length === 0) {
+    if (unwatchLinks.length === 0) {
       // Debug: log all links to see what's available
       const allLinks = document.querySelectorAll('a[href]');
       console.log(`Total links found: ${allLinks.length}`);
-      const watchRelatedLinks = Array.from(allLinks).filter(link => 
-        link.href.includes('watch') || link.textContent.includes('watch') || link.textContent.includes('Watch')
+      const watchRelatedElements = document.querySelectorAll('.link-stop-watching, .link-start-watching, .entity-watching');
+      console.log('Watch-related elements:', watchRelatedElements);
+      
+      // Also check for any text containing "ウォッチ"
+      const watchText = Array.from(document.querySelectorAll('*')).filter(el => 
+        el.textContent && el.textContent.includes('ウォッチ')
       );
-      console.log('Watch-related links:', watchRelatedLinks.map(link => ({ href: link.href, text: link.textContent })));
+      console.log('Elements with ウォッチ text:', watchText.slice(0, 5)); // Log first 5
     }
     
-    for (let i = 0; i < unwatchElements.length; i++) {
-      const element = unwatchElements[i];
+    for (let i = 0; i < unwatchLinks.length; i++) {
+      const link = unwatchLinks[i];
       
       try {
-        console.log(`Processing item ${i + 1}/${unwatchElements.length}:`, element);
+        console.log(`Clicking unwatch link ${i + 1}/${unwatchLinks.length}:`, link.textContent);
         
-        if (element.tagName.toLowerCase() === 'button') {
-          // Handle button clicks
-          element.click();
-          unwatchedCount++;
-          await this.delay(500);
-        } else if (element.href) {
-          // Handle link requests
-          console.log(`Unwatching via URL: ${element.href}`);
-          
-          const response = await fetch(element.href, {
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            }
-          });
-          
-          if (response.ok) {
-            unwatchedCount++;
-            element.closest('tr, .watch-item, .notification-item')?.remove();
-          } else {
-            console.warn(`Failed to unwatch: ${response.status} ${response.statusText}`);
-          }
-          
-          await this.delay(300);
+        // Click the link to trigger the JavaScript unwatch action
+        link.click();
+        unwatchedCount++;
+        
+        // Wait for the action to complete
+        await this.delay(800);
+        
+        // Optional: Check if the element was removed/hidden
+        const row = link.closest('tr');
+        if (row && (row.style.display === 'none' || !document.contains(link))) {
+          console.log('Row was removed successfully');
         }
+        
       } catch (error) {
-        console.error('Error unwatching item:', error);
+        console.error('Error clicking unwatch link:', error);
       }
     }
     
