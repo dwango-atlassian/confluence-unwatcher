@@ -47,6 +47,13 @@ document.addEventListener('DOMContentLoaded', function() {
           
           const checkStatus = setInterval(() => {
             chrome.tabs.sendMessage(tab.id, { action: 'getStatus' }, function(statusResponse) {
+              if (chrome.runtime.lastError) {
+                // Connection lost - stop checking
+                clearInterval(checkStatus);
+                setButtonLoading(false);
+                showStatus('📋 処理が完了しているはずです。結果を確認してください。', 'info');
+                return;
+              }
               if (statusResponse) {
                 if (!statusResponse.isRunning && statusResponse.totalUnwatched > 0) {
                   showStatus(`🎉 完了！${statusResponse.totalUnwatched}個のウォッチを解除しました`, 'success');
@@ -84,6 +91,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentTab = tabs[0];
     if (currentTab && (currentTab.url.includes('atlassian.net') || currentTab.url.includes('confluence'))) {
       chrome.tabs.sendMessage(currentTab.id, { action: 'getStatus' }, function(response) {
+        if (chrome.runtime.lastError) {
+          // Content script not ready or not loaded - ignore silently
+          return;
+        }
         if (response && response.isRunning) {
           setButtonLoading(true);
           showStatus(`⏳ 処理中... (ページ ${response.currentPage}, ${response.totalUnwatched}個解除済み)`, 'info');
