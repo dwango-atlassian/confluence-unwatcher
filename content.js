@@ -6,7 +6,37 @@ if (window.confluenceUnwatcher) {
 class ConfluenceUnwatcher {
   constructor() {
     this.isRunning = false;
-    this.totalUnwatched = 0;
+    this.totalUnwatched = this.loadTotalCount();
+    
+    // Check if we should auto-continue after reload
+    this.checkAutoContinue();
+  }
+  
+  saveState(isProcessing, totalCount) {
+    localStorage.setItem('confluenceUnwatcher_processing', isProcessing.toString());
+    localStorage.setItem('confluenceUnwatcher_totalCount', totalCount.toString());
+  }
+  
+  loadTotalCount() {
+    const saved = localStorage.getItem('confluenceUnwatcher_totalCount');
+    return saved ? parseInt(saved) : 0;
+  }
+  
+  isAutoProcessing() {
+    return localStorage.getItem('confluenceUnwatcher_processing') === 'true';
+  }
+  
+  clearState() {
+    localStorage.removeItem('confluenceUnwatcher_processing');
+    localStorage.removeItem('confluenceUnwatcher_totalCount');
+  }
+  
+  async checkAutoContinue() {
+    if (this.isAutoProcessing() && window.location.href.includes('viewnotifications')) {
+      console.log('Auto-continuing after reload...');
+      await this.delay(2000); // Wait for page to fully load
+      await this.unwatchAll();
+    }
   }
 
   async delay(ms) {
@@ -20,13 +50,22 @@ class ConfluenceUnwatcher {
     }
 
     this.isRunning = true;
-    this.totalUnwatched = 0;
+    
+    // If this is a fresh start, reset total count
+    if (!this.isAutoProcessing()) {
+      this.totalUnwatched = 0;
+    }
+    
+    // Mark as processing
+    this.saveState(true, this.totalUnwatched);
     
     try {
       await this.processLoop();
+      this.clearState();
       alert(`🎉 完了しました！合計 ${this.totalUnwatched} 個のウォッチを解除しました。`);
     } catch (error) {
       console.error('Error:', error);
+      this.clearState();
       alert(`エラーが発生しました: ${error.message}`);
     } finally {
       this.isRunning = false;
@@ -41,6 +80,9 @@ class ConfluenceUnwatcher {
       const unwatchedCount = await this.unwatchCurrentPage();
       this.totalUnwatched += unwatchedCount;
       
+      // Update saved state
+      this.saveState(true, this.totalUnwatched);
+      
       console.log(`Unwatched ${unwatchedCount} items (Total: ${this.totalUnwatched})`);
       
       // ウォッチの中止対象がなくなったら終了
@@ -53,17 +95,8 @@ class ConfluenceUnwatcher {
       console.log('Reloading page...');
       window.location.reload();
       
-      // ページ読み込み完了まで待機
-      await new Promise((resolve) => {
-        const checkReload = () => {
-          if (document.readyState === 'complete') {
-            setTimeout(resolve, 2000); // 2秒待機
-          } else {
-            setTimeout(checkReload, 500);
-          }
-        };
-        checkReload();
-      });
+      // リロード後はcheckAutoContinueで処理が再開される
+      return;
     }
   }
 
