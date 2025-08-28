@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 300px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      margin: 0 0 5px 0;
+      color: #172b4d;
+    }
+    
+    .header p {
+      font-size: 12px;
+      color: #6b778c;
+      margin: 0;
+    }
+    
+    .button-container {
+      margin: 20px 0;
+    }
+    
+    #unwatchButton {
+      width: 100%;
+      padding: 12px;
+      background-color: #0052cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    #unwatchButton:hover {
+      background-color: #0747a6;
+    }
+    
+    #unwatchButton:disabled {
+      background-color: #dfe1e6;
+      color: #6b778c;
+      cursor: not-allowed;
+    }
+    
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      text-align: center;
+    }
+    
+    .status.info {
+      background-color: #e6fcff;
+      color: #0065ff;
+      border: 1px solid #b3d4ff;
+    }
+    
+    .status.success {
+      background-color: #e3fcef;
+      color: #006644;
+      border: 1px solid #79e2a0;
+    }
+    
+    .status.error {
+      background-color: #ffebe6;
+      color: #bf2600;
+      border: 1px solid #ffbdad;
+    }
+    
+    .instructions {
+      font-size: 11px;
+      color: #6b778c;
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #f4f5f7;
+      border-radius: 4px;
+    }
+    
+    .instructions strong {
+      color: #172b4d;
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #dfe1e6;
+      border-top: 2px solid #0052cc;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🙈 Confluence Unwatcher</h1>
+    <p>🚀 全てのウォッチを一括解除</p>
+  </div>
+  
+  <div class="button-container">
+    <button id="unwatchButton">🎯 ウォッチ解除を開始</button>
+  </div>
+  
+  <div id="status" class="status" style="display: none;"></div>
+  
+  <div class="instructions">
+    <strong>📋 使い方:</strong><br>
+    1. 📍 Confluenceのウォッチリストページで実行してください<br>
+    2. 🔄 全てのページを自動で巡回してウォッチを解除します<br>
+    3. ⚠️ 処理中はタブを閉じないでください
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

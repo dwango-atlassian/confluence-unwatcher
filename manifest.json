@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "🙈 Confluence Unwatcher",
+  "version": "1.0.0",
+  "description": "🚀 Confluenceの全てのウォッチを一括解除するChrome拡張",
+  "permissions": [
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "🙈 Confluence Unwatcher"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
