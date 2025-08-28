@@ -30,14 +30,47 @@ class ConfluenceUnwatcher {
   clearState() {
     localStorage.removeItem('confluenceUnwatcher_processing');
     localStorage.removeItem('confluenceUnwatcher_totalCount');
+    localStorage.removeItem('confluenceUnwatcher_lastUrl');
   }
   
   async checkAutoContinue() {
+    // Only auto-continue if it's a natural page navigation (not reload)
     if (this.isAutoProcessing() && this.isConfluencePage() && window.location.href.includes('viewnotifications')) {
+      // Check if this is a natural continuation vs manual navigation
+      const lastUrl = localStorage.getItem('confluenceUnwatcher_lastUrl');
+      const currentUrl = window.location.href;
+      
+      // If URLs are very different or this looks like a reload, stop auto-processing
+      if (lastUrl && this.isLikelyManualNavigation(lastUrl, currentUrl)) {
+        console.log('Manual navigation detected, stopping auto-continue');
+        this.clearState();
+        return;
+      }
+      
       console.log('Auto-continuing unwatch process...');
       await this.delay(2000); // Wait for page to fully load
       await this.autoContinueUnwatch();
     }
+  }
+  
+  isLikelyManualNavigation(lastUrl, currentUrl) {
+    // If URLs are exactly the same, it's likely a reload
+    if (lastUrl === currentUrl) return true;
+    
+    // If startIndex decreased or went to a different section, it's likely manual
+    const lastIndex = this.extractStartIndex(lastUrl);
+    const currentIndex = this.extractStartIndex(currentUrl);
+    
+    if (lastIndex !== null && currentIndex !== null && currentIndex <= lastIndex) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  extractStartIndex(url) {
+    const match = url.match(/startIndex=(\d+)/);
+    return match ? parseInt(match[1]) : 0;
   }
   
   async autoContinueUnwatch() {
@@ -121,6 +154,8 @@ class ConfluenceUnwatcher {
     
     if (nextButton && !nextButton.classList.contains('disabled') && nextButton.href) {
       console.log('Moving to next page automatically...');
+      // Save current URL before navigation
+      localStorage.setItem('confluenceUnwatcher_lastUrl', window.location.href);
       window.location.href = nextButton.href;
     } else {
       this.clearState();
@@ -225,5 +260,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 window.confluenceUnwatcher = confluenceUnwatcher;
+
+// Clear state on page unload (refresh, close tab, navigate away)
+window.addEventListener('beforeunload', () => {
+  // Only clear if user is manually navigating away
+  if (confluenceUnwatcher.isAutoProcessing()) {
+    const isAutoNavigation = performance.getEntriesByType('navigation')[0]?.type === 'navigate';
+    if (!isAutoNavigation) {
+      console.log('Page unload detected, clearing auto-continue state');
+      confluenceUnwatcher.clearState();
+    }
+  }
+});
 
 }
