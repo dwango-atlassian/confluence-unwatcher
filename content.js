@@ -62,11 +62,11 @@ class ConfluenceUnwatcher {
     try {
       await this.processLoop();
       this.clearState();
-      alert(`🎉 完了しました！合計 ${this.totalUnwatched} 個のウォッチを解除しました。`);
+      console.log(`🎉 完了しました！合計 ${this.totalUnwatched} 個のウォッチを解除しました。`);
     } catch (error) {
       console.error('Error:', error);
       this.clearState();
-      alert(`エラーが発生しました: ${error.message}`);
+      console.error(`エラーが発生しました: ${error.message}`);
     } finally {
       this.isRunning = false;
     }
