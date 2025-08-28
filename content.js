@@ -45,15 +45,15 @@ class ConfluenceUnwatcher {
 
   async navigateToWatchedPages() {
     const baseUrl = window.location.origin;
-    const watchedPagesUrl = `${baseUrl}/wiki/users/viewmywatches.action`;
+    const watchedPagesUrl = `${baseUrl}/wiki/users/viewnotifications`;
     
-    if (!window.location.href.includes('viewmywatches.action')) {
+    if (!window.location.href.includes('viewnotifications')) {
       console.log('Navigating to watched pages...');
       window.location.href = watchedPagesUrl;
       
       await new Promise((resolve) => {
         const checkLoad = () => {
-          if (window.location.href.includes('viewmywatches.action') && 
+          if (window.location.href.includes('viewnotifications') && 
               document.readyState === 'complete') {
             resolve();
           } else {
