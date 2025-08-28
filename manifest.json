@@ -4,11 +4,12 @@
   "version": "1.0.0",
   "description": "🚀 Confluenceの全てのウォッチを一括解除するChrome拡張",
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "scripting"
   ],
   "content_scripts": [
     {
-      "matches": ["*://*/*"],
+      "matches": ["*://*.atlassian.net/*", "*://*/confluence/*", "*://confluence.*/*"],
       "js": ["content.js"],
       "run_at": "document_end"
     }

@@ -34,7 +34,20 @@ document.addEventListener('DOMContentLoaded', function() {
       setButtonLoading(true);
       showStatus('🚀 ウォッチ解除処理を開始します...', 'info');
       
-      chrome.tabs.sendMessage(tab.id, { action: 'unwatchAll' }, function(response) {
+      // First, try to inject content script if needed
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content.js']
+        });
+      } catch (injectionError) {
+        // Content script might already be injected, continue
+        console.log('Content script injection:', injectionError.message);
+      }
+      
+      // Small delay to ensure content script is ready
+      setTimeout(() => {
+        chrome.tabs.sendMessage(tab.id, { action: 'unwatchAll' }, function(response) {
         if (chrome.runtime.lastError) {
           console.error('Error:', chrome.runtime.lastError.message || chrome.runtime.lastError);
           showStatus('⚠️ エラーが発生しました。ページを更新して再試行してください。', 'error');
@@ -78,7 +91,8 @@ document.addEventListener('DOMContentLoaded', function() {
           showStatus('❌ 処理の開始に失敗しました', 'error');
           setButtonLoading(false);
         }
-      });
+        });
+      }, 1000); // 1秒待機
       
     } catch (error) {
       console.error('Error:', error.message || error);
