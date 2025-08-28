@@ -6,34 +6,16 @@ if (window.confluenceUnwatcher) {
 class ConfluenceUnwatcher {
   constructor() {
     this.isRunning = false;
-    this.totalUnwatched = this.loadTotalCount();
+    this.totalUnwatched = 0;
     
-    // Check if we should auto-continue after reload
-    this.checkAutoContinue();
+    // Check if we should auto-start based on URL parameter
+    this.checkAutoStart();
   }
   
-  saveState(isProcessing, totalCount) {
-    localStorage.setItem('confluenceUnwatcher_processing', isProcessing.toString());
-    localStorage.setItem('confluenceUnwatcher_totalCount', totalCount.toString());
-  }
-  
-  loadTotalCount() {
-    const saved = localStorage.getItem('confluenceUnwatcher_totalCount');
-    return saved ? parseInt(saved) : 0;
-  }
-  
-  isAutoProcessing() {
-    return localStorage.getItem('confluenceUnwatcher_processing') === 'true';
-  }
-  
-  clearState() {
-    localStorage.removeItem('confluenceUnwatcher_processing');
-    localStorage.removeItem('confluenceUnwatcher_totalCount');
-  }
-  
-  async checkAutoContinue() {
-    if (this.isAutoProcessing() && window.location.href.includes('viewnotifications')) {
-      console.log('Auto-continuing after reload...');
+  async checkAutoStart() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('confluenceUnwatch') === 'auto') {
+      console.log('Auto-starting unwatch process...');
       await this.delay(2000); // Wait for page to fully load
       await this.unwatchAll();
     }
@@ -51,21 +33,11 @@ class ConfluenceUnwatcher {
 
     this.isRunning = true;
     
-    // If this is a fresh start, reset total count
-    if (!this.isAutoProcessing()) {
-      this.totalUnwatched = 0;
-    }
-    
-    // Mark as processing
-    this.saveState(true, this.totalUnwatched);
-    
     try {
       await this.processLoop();
-      this.clearState();
       console.log(`🎉 完了しました！合計 ${this.totalUnwatched} 個のウォッチを解除しました。`);
     } catch (error) {
       console.error('Error:', error);
-      this.clearState();
       console.error(`エラーが発生しました: ${error.message}`);
     } finally {
       this.isRunning = false;
@@ -80,9 +52,6 @@ class ConfluenceUnwatcher {
       const unwatchedCount = await this.unwatchCurrentPage();
       this.totalUnwatched += unwatchedCount;
       
-      // Update saved state
-      this.saveState(true, this.totalUnwatched);
-      
       console.log(`Unwatched ${unwatchedCount} items (Total: ${this.totalUnwatched})`);
       
       // ウォッチの中止対象がなくなったら終了
@@ -91,11 +60,13 @@ class ConfluenceUnwatcher {
         break;
       }
       
-      // 2. 全て実行したらページを自動リロードする
-      console.log('Reloading page...');
-      window.location.reload();
+      // 2. 全て実行したらURLパラメータ付きでリロードする
+      console.log('Reloading page with auto parameter...');
+      const currentUrl = new URL(window.location);
+      currentUrl.searchParams.set('confluenceUnwatch', 'auto');
+      window.location.href = currentUrl.toString();
       
-      // リロード後はcheckAutoContinueで処理が再開される
+      // リロード後はcheckAutoStartで処理が再開される
       return;
     }
   }
@@ -131,8 +102,7 @@ class ConfluenceUnwatcher {
 
   getStatus() {
     return {
-      isRunning: this.isRunning,
-      totalUnwatched: this.totalUnwatched
+      isRunning: this.isRunning
     };
   }
 }
