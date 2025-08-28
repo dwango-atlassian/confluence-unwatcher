@@ -1,3 +1,9 @@
+// Prevent duplicate execution
+if (window.confluenceUnwatcher) {
+  console.log('Confluence Unwatcher already loaded');
+  return;
+}
+
 class ConfluenceUnwatcher {
   constructor() {
     this.isRunning = false;
@@ -27,14 +33,11 @@ class ConfluenceUnwatcher {
     }
 
     this.isRunning = true;
-    this.totalUnwatched = 0;
-    this.currentPage = 1;
+    const startCount = this.totalUnwatched;
 
     try {
       await this.navigateToWatchedPages();
-      await this.processAllPages();
-      
-      alert(`完了しました！合計 ${this.totalUnwatched} 個のページのウォッチを解除しました。`);
+      await this.processCurrentPage();
     } catch (error) {
       console.error('Error during unwatching process:', error);
       alert(`エラーが発生しました: ${error.message}`);
@@ -65,55 +68,24 @@ class ConfluenceUnwatcher {
     }
   }
 
-  async processAllPages() {
-    let hasMorePages = true;
+  async processCurrentPage() {
+    console.log(`Processing current page...`);
     
-    while (hasMorePages) {
-      console.log(`Processing page ${this.currentPage}...`);
-      
-      await this.delay(1000);
-      
-      const unwatchedCount = await this.unwatchCurrentPage();
-      this.totalUnwatched += unwatchedCount;
-      
-      console.log(`Page ${this.currentPage}: ${unwatchedCount} items unwatched (Total: ${this.totalUnwatched})`);
-      
-      // Check for next page before trying to go there
-      const nextButton = document.querySelector('a[title*="次"], a[title*="Next"], a.next, .pagination-next a, a[href*="startIndex"]');
-      
-      if (!nextButton || nextButton.classList.contains('disabled') || !nextButton.href) {
-        console.log('No more pages found, finishing...');
-        hasMorePages = false;
-      } else {
-        console.log('Moving to next page...');
-        this.currentPage++;
-        
-        const currentUrl = window.location.href;
-        window.location.href = nextButton.href;
-        
-        // Wait for page to actually change and load
-        hasMorePages = await new Promise((resolve) => {
-          const checkPageChange = () => {
-            if (window.location.href !== currentUrl && document.readyState === 'complete') {
-              // Additional wait for dynamic content to load
-              setTimeout(() => resolve(true), 2000);
-            } else {
-              setTimeout(checkPageChange, 500);
-            }
-          };
-          
-          // Timeout after 30 seconds
-          setTimeout(() => {
-            console.log('Page transition timeout, assuming no more pages');
-            resolve(false);
-          }, 30000);
-          
-          checkPageChange();
-        });
-      }
+    await this.delay(1000);
+    
+    const unwatchedCount = await this.unwatchCurrentPage();
+    this.totalUnwatched += unwatchedCount;
+    
+    console.log(`Current page processed: ${unwatchedCount} items unwatched`);
+    
+    // Check if there are more pages
+    const nextButton = document.querySelector('a[title*="次"], a[title*="Next"], a.next, .pagination-next a, a[href*="startIndex"]');
+    
+    if (nextButton && !nextButton.classList.contains('disabled') && nextButton.href) {
+      alert(`現在のページで ${unwatchedCount} 個のウォッチを解除しました。\n\n次のページがあります。次のページに移動してから、再度拡張機能を実行してください。\n\n合計解除数: ${this.totalUnwatched}個`);
+    } else {
+      alert(`完了しました！\n現在のページで ${unwatchedCount} 個のウォッチを解除しました。\n\n全体の合計解除数: ${this.totalUnwatched}個`);
     }
-    
-    console.log(`Finished processing all pages. Total unwatched: ${this.totalUnwatched}`);
   }
 
   async unwatchCurrentPage() {
