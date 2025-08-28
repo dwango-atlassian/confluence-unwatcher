@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       chrome.tabs.sendMessage(tab.id, { action: 'unwatchAll' }, function(response) {
         if (chrome.runtime.lastError) {
-          console.error('Error:', chrome.runtime.lastError);
+          console.error('Error:', chrome.runtime.lastError.message || chrome.runtime.lastError);
           showStatus('⚠️ エラーが発生しました。ページを更新して再試行してください。', 'error');
           setButtonLoading(false);
           return;
@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error:', error.message || error);
       showStatus('❌ エラーが発生しました', 'error');
       setButtonLoading(false);
     }
